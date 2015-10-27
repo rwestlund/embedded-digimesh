@@ -65,8 +65,7 @@ struct xbee_packet *xbee_add_byte(uint8_t c) {
 /* Build packet for an AT command. Pass a pointer to an empty xbee_packet, a
  * pointer to the buffer to use for the payload, and the length of the payload.
  * Example arg: "NITEST" set NI to "TEST" */
-struct xbee_packet *xbee_build_command_packet(struct xbee_packet *p,
-const uint8_t *data, uint16_t bytes)
+void xbee_build_command_packet(struct xbee_packet *p, const uint8_t *data, uint16_t bytes)
 {
   p->len = bytes + 6;
   p->buf[0] = XBEE_START;
@@ -76,7 +75,6 @@ const uint8_t *data, uint16_t bytes)
   p->buf[4] = get_frame_id();
   memcpy(p->buf+5, data, bytes);
   p->buf[p->len-1] = calc_checksum(p);
-  return p;
 }
 
 

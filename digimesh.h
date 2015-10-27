@@ -1,5 +1,5 @@
-/* Randy Westlund
- * XBee include file
+/* Copyright (c) 2015 Randy Westlund, All rights resrved.
+ * This code is under the BSD-2-Clause license
  */
 
 #ifndef DIGIMESH_H
