@@ -40,7 +40,7 @@ commands.  To set the Node Identifier to `001`:
 uint8_t cmd[] = "NI001";
 struct xbee_packet p;
 xbee_build_command_packet(&p, cmd, 5);
-/* now send p through your UART */
+/* now send p.buf through your UART */
 ```
 
 ### Sending a Message
@@ -50,8 +50,8 @@ uint8_t *my_payload;
 /* fill the buffer with your app-specific payload, then: */
 uint64_t addr = TARGET_ADDRESS;
 struct xbee_packet p;
-xbee_tx_data(&p, addr, my_payload, payload_len);
-/* now send p through your UART */
+xbee_build_data_packet(&p, addr, my_payload, payload_len);
+/* now send p.buf through your UART */
 ```
 
 ### Receiving Messages

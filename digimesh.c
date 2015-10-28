@@ -6,9 +6,21 @@
 #include <string.h> /* memcpy */
 #include "digimesh.h"
 
+/* declared as extern in the header */
+volatile uint8_t xbee_comm_err_count;
+
+/* internal helper functions */
+static uint8_t  calc_checksum(const struct xbee_packet *p);
+static uint8_t  get_frame_id(void);
+
+/******************************************
+*   RECEIVE FUNCTIONS
+******************************************/
+
 /* Should be called once for each incoming byte. Will return an xbee_packet
  * pointer when a packet has been completed  */
-struct xbee_packet *xbee_add_byte(uint8_t c) {
+struct xbee_packet *
+xbee_add_byte(uint8_t c) {
     /* Two buffers for receiving packets. We receive into one, then swap
      * pointers and receive into the other. This lets the application handle a
      * packet while we read the next, without using memcpy. Obviously the
@@ -62,34 +74,37 @@ struct xbee_packet *xbee_add_byte(uint8_t c) {
 }
 
 
+/******************************************
+*   TRANSMIT FUNCTIONS
+******************************************/
+
 /* Build packet for an AT command. Pass a pointer to an empty xbee_packet, a
  * pointer to the buffer to use for the payload, and the length of the payload.
  * Example arg: "NITEST" set NI to "TEST" */
-void xbee_build_command_packet(struct xbee_packet *p, const uint8_t *data, uint16_t bytes)
-{
+void
+xbee_build_command_packet(struct xbee_packet *p, const uint8_t *data,
+uint16_t bytes) {
   p->len = bytes + 6;
   p->buf[0] = XBEE_START;
   p->buf[1] = (uint8_t)((p->len-4)>>8);
   p->buf[2] = (uint8_t)(p->len-4);
-  p->buf[3] = FRAME_AT_COMMAND;
+  p->buf[3] = XBEE_FRAME_AT_COMMAND;
   p->buf[4] = get_frame_id();
   memcpy(p->buf+5, data, bytes);
   p->buf[p->len-1] = calc_checksum(p);
 }
 
 
-/* This function takes a buffer and sends it to an address.
- * An empty addr means broadcast.
- */
-struct xbee_packet *xbee_tx_data(struct xbee_packet *p, uint64_t addr,
-const uint8_t *data, uint16_t bytes)
-{
+/* Take a buffer and send it to an address.  An empty addr means broadcast. */
+void
+xbee_build_data_packet(struct xbee_packet *p, uint64_t addr,
+const uint8_t *data, uint16_t bytes) {
   p->len = bytes + 14;
   if(!addr) addr = XBEE_BROADCAST_ADDRESS;
   p->buf[0] = XBEE_START;
   p->buf[1] = (uint8_t)((p->len-4)>>8); /* len upper */
   p->buf[2] = (uint8_t)((p->len-4)); /* len lower */
-  p->buf[3] = FRAME_TRANSMIT_REQUEST;
+  p->buf[3] = XBEE_FRAME_TRANSMIT_REQUEST;
   p->buf[4] = get_frame_id();
   p->buf[5] = addr>>56; /* addr high */
   p->buf[6] = addr>>48;
@@ -105,11 +120,15 @@ const uint8_t *data, uint16_t bytes)
   p->buf[16] = 0x00; /* Tx options */
   memcpy((uint8_t*)p->buf+17, data, bytes); /* insert data payoad */
   p->buf[p->len-1] = calc_checksum(p);
-  return p;
 }
 
+/******************************************
+*   INTERNAL HELPER FUNCTIONS
+******************************************/
+
 /* Calculate and return checksum from a message buffer */
-uint8_t calc_checksum(const struct xbee_packet *p) {
+uint8_t
+calc_checksum(const struct xbee_packet *p) {
     uint16_t i;
     uint8_t chksum = 0;
     for(i = 3; i < p->len-4; i++) chksum += p->buf[i];
@@ -117,7 +136,8 @@ uint8_t calc_checksum(const struct xbee_packet *p) {
 }
 
 /* Return consecutive frame IDs, skipping zero */
-uint8_t get_frame_id() {
+uint8_t
+get_frame_id() {
     static uint8_t frame_id;
     /* don't use ID 0, it means no ACK */
     if(frame_id == 255) frame_id = 0;
