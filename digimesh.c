@@ -109,7 +109,7 @@ uint16_t bytes) {
 uint8_t
 xbee_build_data_packet(struct xbee_packet *p, uint64_t addr,
 const uint8_t *data, uint16_t bytes) {
-    p->len = bytes + 14;
+    p->len = bytes + 18;
     uint8_t frame_id = get_frame_id();
     if(!addr) addr = XBEE_BROADCAST_ADDRESS;
     p->buf[0] = XBEE_START;

@@ -72,6 +72,8 @@ test_build_command_packet(void) {
     xbee_build_command_packet(&p, example_get_at+5, sizeof(example_get_at)-6);
     /* test it be trying to feed it to the parser */
     add_byte(p.buf, p.len);
+    /* make sure length is what we expect */
+    CU_ASSERT_EQUAL(p.len, sizeof(example_get_at));
 }
 
 /* Test that sending a message to a destination gives a parsable object */
@@ -81,6 +83,8 @@ test_build_data_packet(void) {
     xbee_build_data_packet(&p, 0x00, (uint8_t *)"HELLO", sizeof("HELLO")-1);
     /* test it be trying to feed it to the parser */
     add_byte(p.buf, p.len);
+    /* make sure length is what we expect */
+    CU_ASSERT_EQUAL(p.len, 18 + sizeof("HELLO")-1);
 }
 
 /* Test whether frame_ids wrap properly */
