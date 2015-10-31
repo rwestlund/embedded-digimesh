@@ -5,6 +5,8 @@
 #ifndef DIGIMESH_H
 #define DIGIMESH_H
 
+#include <stdint.h>
+
 #define XBEE_BUFFER_SIZE 100
 
 /* digimesh constants */
@@ -27,13 +29,16 @@ struct xbee_packet {
 };
 
 /* receive functions */
-struct xbee_packet *    xbee_add_byte(uint8_t c);
+struct xbee_packet *xbee_add_byte(uint8_t c);
 
 /* transmit functions */
-void    xbee_build_command_packet(struct xbee_packet *p, const uint8_t *data,
-            uint16_t bytes);
-void    xbee_build_data_packet(struct xbee_packet *p, uint64_t addr,
-            const uint8_t *data, uint16_t bytes);
+uint8_t xbee_build_command_packet(struct xbee_packet *p, const uint8_t *data,
+                                uint16_t bytes);
+uint8_t xbee_build_data_packet(struct xbee_packet *p, uint64_t addr,
+                                const uint8_t *data, uint16_t bytes);
+
+/* utility functions */
+uint8_t xbee_calc_checksum(const struct xbee_packet *p);
 
 /* Incremented for every checksum or overflow error. May be used by the
  * application in what ever way it wants */

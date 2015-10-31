@@ -10,7 +10,6 @@
 volatile uint8_t xbee_comm_err_count;
 
 /* internal helper functions */
-static uint8_t  calc_checksum(const struct xbee_packet *p);
 static uint8_t  get_frame_id(void);
 
 /******************************************
@@ -56,12 +55,20 @@ xbee_add_byte(uint8_t c) {
     /* if we've finished the packet */
     if (len && (p->len == len + 4)) {
         /* if the packet is valid */
-        if(!calc_checksum(p)) {
+        if(p->buf[p->len-1] == xbee_calc_checksum(p)) {
             len = 0;
             /* swap which buffer we're using and return a pointer to the one we
              * just filled. This gives us double-buffering without the memcpy */
-            if (p == &p1) { p = &p2; return &p1; }
-            else { p = &p1; return &p2; }
+            if (p == &p1) {
+                p = &p2;
+                p->len = 0;
+                return &p1;
+            }
+            else {
+                p = &p1;
+                p->len = 0;
+                return &p2;
+            }
         }
         /* drop the bad packet */
         else {
@@ -80,46 +87,51 @@ xbee_add_byte(uint8_t c) {
 
 /* Build packet for an AT command. Pass a pointer to an empty xbee_packet, a
  * pointer to the buffer to use for the payload, and the length of the payload.
- * Example arg: "NITEST" set NI to "TEST" */
-void
+ * Returns the frame_id used.  Example arg: "NITEST" set NI to "TEST" */
+uint8_t
 xbee_build_command_packet(struct xbee_packet *p, const uint8_t *data,
 uint16_t bytes) {
-  p->len = bytes + 6;
-  p->buf[0] = XBEE_START;
-  p->buf[1] = (uint8_t)((p->len-4)>>8);
-  p->buf[2] = (uint8_t)(p->len-4);
-  p->buf[3] = XBEE_FRAME_AT_COMMAND;
-  p->buf[4] = get_frame_id();
-  memcpy(p->buf+5, data, bytes);
-  p->buf[p->len-1] = calc_checksum(p);
+    uint8_t frame_id = get_frame_id();
+    p->len = bytes + 6;
+    p->buf[0] = XBEE_START;
+    p->buf[1] = (uint8_t)((p->len-4)>>8);
+    p->buf[2] = (uint8_t)(p->len-4);
+    p->buf[3] = XBEE_FRAME_AT_COMMAND;
+    p->buf[4] = frame_id;
+    memcpy(p->buf+5, data, bytes);
+    p->buf[p->len-1] = xbee_calc_checksum(p);
+    return frame_id;
 }
 
 
-/* Take a buffer and send it to an address.  An empty addr means broadcast. */
-void
+/* Take a buffer and send it to an address.  An empty addr means broadcast.
+ * Returns the frame_id used */
+uint8_t
 xbee_build_data_packet(struct xbee_packet *p, uint64_t addr,
 const uint8_t *data, uint16_t bytes) {
-  p->len = bytes + 14;
-  if(!addr) addr = XBEE_BROADCAST_ADDRESS;
-  p->buf[0] = XBEE_START;
-  p->buf[1] = (uint8_t)((p->len-4)>>8); /* len upper */
-  p->buf[2] = (uint8_t)((p->len-4)); /* len lower */
-  p->buf[3] = XBEE_FRAME_TRANSMIT_REQUEST;
-  p->buf[4] = get_frame_id();
-  p->buf[5] = addr>>56; /* addr high */
-  p->buf[6] = addr>>48;
-  p->buf[7] = addr>>40;
-  p->buf[8] = addr>>32;
-  p->buf[9] = addr>>24;
-  p->buf[10] = addr>>16;
-  p->buf[11] = addr>>8;
-  p->buf[12] = addr; /* addr low */
-  p->buf[13] = 0xff; /* reserved */
-  p->buf[14] = 0xfe; /* reserved */
-  p->buf[15] = 0x00; /* max hops */
-  p->buf[16] = 0x00; /* Tx options */
-  memcpy((uint8_t*)p->buf+17, data, bytes); /* insert data payoad */
-  p->buf[p->len-1] = calc_checksum(p);
+    p->len = bytes + 14;
+    uint8_t frame_id = get_frame_id();
+    if(!addr) addr = XBEE_BROADCAST_ADDRESS;
+    p->buf[0] = XBEE_START;
+    p->buf[1] = (uint8_t)((p->len-4)>>8); /* len upper */
+    p->buf[2] = (uint8_t)((p->len-4)); /* len lower */
+    p->buf[3] = XBEE_FRAME_TRANSMIT_REQUEST;
+    p->buf[4] = frame_id;
+    p->buf[5] = addr>>56; /* addr high */
+    p->buf[6] = addr>>48;
+    p->buf[7] = addr>>40;
+    p->buf[8] = addr>>32;
+    p->buf[9] = addr>>24;
+    p->buf[10] = addr>>16;
+    p->buf[11] = addr>>8;
+    p->buf[12] = addr; /* addr low */
+    p->buf[13] = 0xff; /* reserved */
+    p->buf[14] = 0xfe; /* reserved */
+    p->buf[15] = 0x00; /* max hops */
+    p->buf[16] = 0x00; /* Tx options */
+    memcpy((uint8_t*)p->buf+17, data, bytes); /* insert data payoad */
+    p->buf[p->len-1] = xbee_calc_checksum(p);
+    return frame_id;
 }
 
 /******************************************
@@ -128,10 +140,10 @@ const uint8_t *data, uint16_t bytes) {
 
 /* Calculate and return checksum from a message buffer */
 uint8_t
-calc_checksum(const struct xbee_packet *p) {
+xbee_calc_checksum(const struct xbee_packet *p) {
     uint16_t i;
     uint8_t chksum = 0;
-    for(i = 3; i < p->len-4; i++) chksum += p->buf[i];
+    for(i = 3; i < p->len-1; i++) chksum += p->buf[i];
     return 0xff - chksum;
 }
 

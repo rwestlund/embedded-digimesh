@@ -1,7 +1,6 @@
 # embedded-digimesh
 
-This is a minimal C library that implements a portion of the XBee Digimesh
-protocol.
+A minimal C library that implements a portion of the XBee Digimesh protocol.
 
 ## Description
 
@@ -25,7 +24,17 @@ Include `digimesh.h`, build `digimesh.c`, and link with `digimesh.o`.
 
 ## Testing
 
-TODO
+This library uses CUnit for tests.  After installing the CUnit libraries, run:
+```
+make
+./obj/test
+```
+The makefile is written in BSD make, but if you don't have it it's easy to
+build by hand:
+```
+cc -Wall -Werror -g -I. -I/usr/local/include -std=c99 -fstack-protector \
+digimesh.c test.c -o obj/test -L/usr/local/lib -lcunit
+```
 
 ## Usage
 
@@ -39,8 +48,8 @@ commands.  To set the Node Identifier to `001`:
 ```
 uint8_t cmd[] = "NI001";
 struct xbee_packet p;
-xbee_build_command_packet(&p, cmd, 5);
-/* now send p.buf through your UART */
+uint8_t frame_id = xbee_build_command_packet(&p, cmd, 5);
+/* now send p.buf through your UART and wait for a response to frame_id */
 ```
 
 ### Sending a Message
@@ -50,8 +59,8 @@ uint8_t *my_payload;
 /* fill the buffer with your app-specific payload, then: */
 uint64_t addr = TARGET_ADDRESS;
 struct xbee_packet p;
-xbee_build_data_packet(&p, addr, my_payload, payload_len);
-/* now send p.buf through your UART */
+uint8_t frame_id = xbee_build_data_packet(&p, addr, my_payload, payload_len);
+/* now send p.buf through your UART and wait for a response to frame_id */
 ```
 
 ### Receiving Messages
@@ -81,7 +90,7 @@ buffer.  When the second buffer has a packet, they swap again.
 
 The reason for this is to give the application time to parse the packet without
 dynamically allocating memory.  Naturally, the application must parse the
-packet quickly, or memcpy it somewhere else.
+packet quickly, or `memcpy` it somewhere else.
 
 ## Future Work
 
