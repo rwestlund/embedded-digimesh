@@ -91,7 +91,8 @@ xbee_add_byte(uint8_t c) {
 uint8_t
 xbee_build_command_packet(struct xbee_packet *p, const uint8_t *data,
 uint16_t bytes) {
-    uint8_t frame_id = get_frame_id();
+    /* use 0 for the frame_id if ACKs are disabled */
+    uint8_t frame_id = p->disable_ack ? 0x00 : get_frame_id();
     p->len = bytes + 6;
     p->buf[0] = XBEE_START;
     p->buf[1] = (uint8_t)((p->len-4)>>8);
@@ -104,13 +105,14 @@ uint16_t bytes) {
 }
 
 
-/* Take a buffer and send it to an address.  An empty addr means broadcast.
- * Returns the frame_id used */
+/* Build a data packet (send a buffer to an address).  An empty addr means
+ * broadcast.  Returns the frame_id used */
 uint8_t
 xbee_build_data_packet(struct xbee_packet *p, uint64_t addr,
 const uint8_t *data, uint16_t bytes) {
     p->len = bytes + 18;
-    uint8_t frame_id = get_frame_id();
+    /* use 0 for the frame_id if ACKs are disabled */
+    uint8_t frame_id = p->disable_ack ? 0x00 : get_frame_id();
     if(!addr) addr = XBEE_BROADCAST_ADDRESS;
     p->buf[0] = XBEE_START;
     p->buf[1] = (uint8_t)((p->len-4)>>8); /* len upper */

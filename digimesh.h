@@ -26,6 +26,8 @@ struct xbee_packet {
     uint8_t buf[XBEE_BUFFER_SIZE];
     /* length of the whole buffer, not just the payload */
     uint16_t len;
+    /* if set, frame_id will be set to 0, disabling ACKs */
+    uint8_t disable_ack;
 };
 
 /* receive functions */
