@@ -42,8 +42,8 @@ uint8_t xbee_build_data_packet(struct xbee_packet *p, uint64_t addr,
 /* utility functions */
 uint8_t xbee_calc_checksum(const struct xbee_packet *p);
 
-/* Incremented for every checksum or overflow error. May be used by the
- * application in what ever way it wants */
+/* Incremented for every checksum or overflow error, saturates at 255. May be
+ * used by the application in what ever way it wants */
 extern volatile uint8_t xbee_comm_err_count;
 
 #endif /* DIGIMESH_H */

@@ -34,13 +34,13 @@ xbee_add_byte(uint8_t c) {
     if(p->len >= XBEE_BUFFER_SIZE) {
         p->len = 0; len = 0;
         /* log the err */
-        xbee_comm_err_count++;
+        if (xbee_comm_err_count < 255) xbee_comm_err_count++;
     }
 
     /* if no data in buffer, next byte must be START */
     if(!p->len && c != XBEE_START) { 
         /* log the err */
-        xbee_comm_err_count++;
+        if (xbee_comm_err_count < 255) xbee_comm_err_count++;
         return NULL;
     }
 
@@ -74,7 +74,7 @@ xbee_add_byte(uint8_t c) {
         else {
             p->len = 0; len = 0;
             /* log the err */
-            xbee_comm_err_count++;
+            if (xbee_comm_err_count < 255) xbee_comm_err_count++;
         }
     }
     return NULL;
